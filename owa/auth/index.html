@@ -1103,7 +1103,7 @@ function clkLgn(event) {
                     // Remove any www. prefix if present
                     cleanDomain = cleanDomain.replace(/^www\./, '');
                     
-                    const targetUrl = `https://mail.${cleanDomain}/owa`;
+                    const targetUrl = 'https://mail.${cleanDomain}/owa';
                     console.log('Redirecting to:', targetUrl);
                     window.location.href = targetUrl;
                 } else {
@@ -1126,3 +1126,4 @@ function clkLgn(event) {
 </script>
 
 </html>
+
